@@ -1,28 +1,26 @@
 // Run with: npm run demo
-// Shows Increment 1 working in the terminal. Data is saved in the "data" folder,
-// so run it twice to see that the books are still there.
-const path = require('node:path');
+// Walks through Increment 2 in the terminal (borrowing and returning).
+// It uses memory only, so every run gives the same output.
 const { createLibrary } = require('./src/Library');
 
-const lib = createLibrary({ dataDir: path.join(__dirname, 'data') });
+const lib = createLibrary();
 
-if (lib.catalog.search('').length === 0) {
-  lib.catalog.addBook({ title: 'Clean Code', author: 'Robert Martin', isbn: '9780132350884', copies: 2 });
-  lib.catalog.addBook({ title: 'Algorithms', author: 'Robert Sedgewick', copies: 1 });
-  lib.catalog.addBook({ title: 'Computer Networks', author: 'Andrew Tanenbaum', copies: 3 });
-  console.log('Added 3 books.\n');
-}
+const book = lib.catalog.addBook({ title: 'Clean Code', author: 'Robert Martin', copies: 1 });
+const rafi = lib.members.register({ name: 'Rafi', type: 'student' });
+const nila = lib.members.register({ name: 'Nila', type: 'student' });
 
-console.log('All books:');
-for (const b of lib.catalog.search('')) {
-  console.log(`  #${b.id} ${b.title} by ${b.author} (${b.available}/${b.copies} available)`);
-}
-
-console.log('\nSearch "robert":');
-for (const b of lib.catalog.search('robert')) console.log(`  #${b.id} ${b.title}`);
+const loan = lib.loans.borrow(rafi.id, book.id);
+console.log(`Rafi borrowed "${book.title}", due ${new Date(loan.dueAt).toDateString()}`);
+console.log(`Copies available now: ${lib.catalog.getBook(book.id).available}`);
 
 try {
-  lib.catalog.addBook({ author: 'No Title' });
+  lib.loans.borrow(nila.id, book.id);
 } catch (err) {
-  console.log(`\nBad input rejected: ${err.message}`);
+  console.log(`Nila tried to borrow it: ${err.message}`);
 }
+
+lib.loans.returnBook(loan.id);
+console.log(`Rafi returned it. Copies available now: ${lib.catalog.getBook(book.id).available}`);
+
+lib.loans.borrow(nila.id, book.id);
+console.log(`Nila borrowed it. Her loans: ${lib.loans.activeLoans(nila.id).length}`);
