@@ -7,19 +7,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 class LoanService {
   /**
    * deps: catalog (CatalogService), members (MemberService), loans (Repository),
-   *       now (function returning a Date; injectable so tests can control time)
+   *       events (EventBus), now (function returning a Date; injectable so tests control time)
    */
-  constructor({ catalog, members, loans, now = () => new Date() }) {
+  constructor({ catalog, members, loans, events, now = () => new Date() }) {
     this.catalog = catalog;
     this.members = members;
     this.loans = loans;
+    this.events = events;
     this.now = now;
   }
 
   borrow(memberId, bookId) {
     const member = this.members.get(memberId);
     const book = this.catalog.getBook(bookId);
-    const policy = createPolicy(member.type);       // rules depend on the member type
+    const policy = createPolicy(member.type);
 
     const active = this.loans.find(l => l.isActive && l.memberId === member.id);
     if (active.length >= policy.maxLoans) {
@@ -28,7 +29,7 @@ class LoanService {
     if (active.some(l => l.bookId === book.id)) {
       throw new RuleError('This member already has a copy of this book');
     }
-    if (!book.isAvailable) throw new RuleError('No copies available');
+    if (!book.isAvailable) throw new RuleError('No copies available. You can reserve this book instead');
 
     const borrowedAt = this.now();
     const dueAt = new Date(borrowedAt.getTime() + policy.loanDays * DAY_MS);
@@ -36,12 +37,14 @@ class LoanService {
     book.available -= 1;
     this.catalog.books.update(book);
 
-    return this.loans.add(new Loan({
+    const loan = this.loans.add(new Loan({
       memberId: member.id,
       bookId: book.id,
       borrowedAt: borrowedAt.toISOString(),
       dueAt: dueAt.toISOString(),
     }));
+    this.events.emit('book.borrowed', { loan, book, member });
+    return loan;
   }
 
   returnBook(loanId) {
@@ -59,10 +62,11 @@ class LoanService {
 
     book.available += 1;
     this.catalog.books.update(book);
+
+    this.events.emit('book.returned', { loan, book, member });
     return loan;
   }
 
-  /** Whole days past the due date (part of a day counts as a full day). */
   daysLate(loan, at = this.now()) {
     const late = at.getTime() - new Date(loan.dueAt).getTime();
     return late > 0 ? Math.ceil(late / DAY_MS) : 0;

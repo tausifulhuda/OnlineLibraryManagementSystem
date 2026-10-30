@@ -1,28 +1,27 @@
 // Run with: npm run demo
-// Walks through Increment 3 in the terminal (due dates and fines).
-// A fake clock lets us "wait" several weeks instantly. Memory only, so output repeats.
+// Walks through Increment 4 in the terminal (reservations and notifications).
+// Memory only, so output repeats.
 const { createLibrary } = require('./src/Library');
 
-const DAY = 24 * 60 * 60 * 1000;
-let time = new Date('2026-01-01T10:00:00Z');
-const lib = createLibrary({ now: () => new Date(time) });
-const wait = days => { time = new Date(time.getTime() + days * DAY); };
+const lib = createLibrary();
 
-const student = lib.members.register({ name: 'Rafi', type: 'student' });
-const teacher = lib.members.register({ name: 'Dr. Karim', type: 'teacher' });
-const book = lib.catalog.addBook({ title: 'Computer Networks', author: 'Tanenbaum', copies: 2 });
+const book = lib.catalog.addBook({ title: 'Clean Code', author: 'Robert Martin', copies: 1 });
+const rafi = lib.members.register({ name: 'Rafi', type: 'student' });
+const nila = lib.members.register({ name: 'Nila', type: 'student' });
+const sami = lib.members.register({ name: 'Sami', type: 'student' });
 
-const s = lib.loans.borrow(student.id, book.id);
-const t = lib.loans.borrow(teacher.id, book.id);
-console.log(`Rafi (student) must return it by ${new Date(s.dueAt).toDateString()}`);
-console.log(`Dr. Karim (teacher) must return it by ${new Date(t.dueAt).toDateString()}`);
+const loan = lib.loans.borrow(rafi.id, book.id);
+console.log('Rafi borrowed the only copy.');
 
-wait(19);   // 5 days after the student's due date, still before the teacher's
-const [open] = lib.loans.activeLoans(student.id);
-console.log(`\n19 days later, Rafi is ${open.daysLate} days late (estimated fine ${open.estimatedFine})`);
+lib.reservations.reserve(nila.id, book.id);
+lib.reservations.reserve(sami.id, book.id);
+console.log(`Nila and Sami reserved it. Queue length: ${lib.reservations.queue(book.id).length}`);
 
-const returned = lib.loans.returnBook(s.id);
-console.log(`Rafi returns the book and pays a fine of ${returned.fine}`);
+lib.loans.returnBook(loan.id);
+console.log('\nRafi returns the book...');
 
-wait(16);   // 35 days after borrowing: the teacher is now 5 days late
-console.log(`Dr. Karim returns it 5 days late and pays ${lib.loans.returnBook(t.id).fine}`);
+for (const person of [nila, sami]) {
+  const notes = lib.reservations.notificationsFor(person.id);
+  console.log(`${person.name}'s notifications: ${notes.length ? notes[0].message : 'none yet'}`);
+}
+console.log(`Still waiting: ${lib.reservations.queue(book.id).length}`);
