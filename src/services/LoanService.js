@@ -1,9 +1,8 @@
 const Loan = require('../models/Loan');
+const { createPolicy } = require('../policies/PolicyFactory');
 const { NotFoundError, RuleError } = require('../errors');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const MAX_LOANS = 3;     // same limit for everyone (Increment 3 makes this depend on member type)
-const LOAN_DAYS = 14;    // same loan period for everyone
 
 class LoanService {
   /**
@@ -20,10 +19,11 @@ class LoanService {
   borrow(memberId, bookId) {
     const member = this.members.get(memberId);
     const book = this.catalog.getBook(bookId);
+    const policy = createPolicy(member.type);       // rules depend on the member type
 
     const active = this.loans.find(l => l.isActive && l.memberId === member.id);
-    if (active.length >= MAX_LOANS) {
-      throw new RuleError(`Borrow limit reached (${MAX_LOANS} books)`);
+    if (active.length >= policy.maxLoans) {
+      throw new RuleError(`Borrow limit reached (${policy.maxLoans} books for a ${member.type})`);
     }
     if (active.some(l => l.bookId === book.id)) {
       throw new RuleError('This member already has a copy of this book');
@@ -31,7 +31,7 @@ class LoanService {
     if (!book.isAvailable) throw new RuleError('No copies available');
 
     const borrowedAt = this.now();
-    const dueAt = new Date(borrowedAt.getTime() + LOAN_DAYS * DAY_MS);
+    const dueAt = new Date(borrowedAt.getTime() + policy.loanDays * DAY_MS);
 
     book.available -= 1;
     this.catalog.books.update(book);
@@ -49,9 +49,12 @@ class LoanService {
     if (!loan) throw new NotFoundError(`Loan ${loanId} not found`);
     if (!loan.isActive) throw new RuleError('This loan was already returned');
 
+    const member = this.members.get(loan.memberId);
     const book = this.catalog.getBook(loan.bookId);
+    const returnedAt = this.now();
 
-    loan.returnedAt = this.now().toISOString();
+    loan.returnedAt = returnedAt.toISOString();
+    loan.fine = createPolicy(member.type).calculateFine(this.daysLate(loan, returnedAt));
     this.loans.update(loan);
 
     book.available += 1;
@@ -59,10 +62,23 @@ class LoanService {
     return loan;
   }
 
-  /** Books a member currently has. */
+  /** Whole days past the due date (part of a day counts as a full day). */
+  daysLate(loan, at = this.now()) {
+    const late = at.getTime() - new Date(loan.dueAt).getTime();
+    return late > 0 ? Math.ceil(late / DAY_MS) : 0;
+  }
+
+  /** Current loans for a member, with live fine estimates for overdue ones. */
   activeLoans(memberId) {
     const member = this.members.get(memberId);
-    return this.loans.find(l => l.isActive && l.memberId === member.id);
+    const policy = createPolicy(member.type);
+    return this.loans
+      .find(l => l.isActive && l.memberId === member.id)
+      .map(l => ({
+        ...l,
+        daysLate: this.daysLate(l),
+        estimatedFine: policy.calculateFine(this.daysLate(l)),
+      }));
   }
 
   list({ memberId } = {}) {
