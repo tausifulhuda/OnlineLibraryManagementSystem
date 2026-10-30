@@ -1,10 +1,11 @@
 {
   "name": "library-system",
-  "version": "0.1.0",
-  "description": "Online Library Management System",
+  "version": "1.0.0",
+  "description": "Online Library Management System built incrementally (MVC, Repository, Strategy, Factory, Observer, Facade)",
+  "main": "src/server.js",
   "scripts": {
-    "test": "node --test",
-    "demo": "node demo.js"
+    "start": "node src/server.js",
+    "test": "node --test"
   },
   "engines": { "node": ">=20" },
   "license": "MIT"

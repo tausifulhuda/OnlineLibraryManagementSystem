@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Online Library Management System</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <header>
+      <img src="/images/logo.png" alt="Library logo" class="logo">
+      <h1>Online Library Management System</h1>
+      <label>
+        Signed in as
+        <select id="who"></select>
+      </label>
+    </header>
+
+    <div id="msg" role="status"></div>
+
+    <main> 
+      <div>
+        <section>
+          <h2>Books</h2>
+          <div class="row">
+            <input id="q" placeholder="Search title, author or ISBN" size="30">
+            <button id="searchBtn">Search</button>
+          </div>
+          <div id="books"></div>
+        </section>
+
+        <section>
+          <h2>Add a book</h2>
+          <div class="row">
+            <input id="bTitle" placeholder="Title">
+            <input id="bAuthor" placeholder="Author">
+            <input id="bCopies" class="copies-input" type="number" min="1" value="1" aria-label="Copies">
+            <button id="addBook">Add book</button>
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section>
+          <h2>My loans</h2>
+          <div id="loans" class="muted">Pick a member above.</div>
+        </section>
+
+        <section>
+          <h2>Notifications</h2>
+          <div id="notes" class="muted">Pick a member above.</div>
+        </section>
+
+        <section>
+          <h2>Add a member</h2>
+          <div class="row">
+            <input id="mName" placeholder="Name">
+            <select id="mType">
+              <option value="student">Student</option>
+              <option value="teacher">Teacher</option>
+            </select>
+            <button id="addMember">Add member</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
