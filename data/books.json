@@ -1,0 +1,29 @@
+{
+  "nextId": 4,
+  "items": [
+    {
+      "id": 1,
+      "title": "Clean Code",
+      "author": "Robert Martin",
+      "isbn": "9780132350884",
+      "copies": 2,
+      "available": 2
+    },
+    {
+      "id": 2,
+      "title": "Algorithms",
+      "author": "Robert Sedgewick",
+      "isbn": "",
+      "copies": 1,
+      "available": 1
+    },
+    {
+      "id": 3,
+      "title": "Computer Networks",
+      "author": "Andrew Tanenbaum",
+      "isbn": "",
+      "copies": 3,
+      "available": 3
+    }
+  ]
+}

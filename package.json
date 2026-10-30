@@ -1,0 +1,11 @@
+{
+  "name": "library-system",
+  "version": "0.1.0",
+  "description": "Online Library Management System",
+  "scripts": {
+    "test": "node --test",
+    "demo": "node demo.js"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}
